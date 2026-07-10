@@ -83,7 +83,7 @@ function escapeHtml(value) {
 async function fetchServerStatus(name, url) {
   const started = performance.now();
   try {
-    const response = await fetch(`${url}?ts=${Date.now()}`, { cache: 'no-store' });
+    const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
