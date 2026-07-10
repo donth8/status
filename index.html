@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrueSpace Status</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h1>TrueSpace Status</h1>
+          <p class="subtitle">Bill &amp; Steve servers and services</p>
+        </div>
+      </div>
+      <div class="meta">
+        <p id="last-updated">Loading…</p>
+        <button id="refresh-btn" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <section id="overall-banner" class="banner banner-loading" aria-live="polite">
+      <span class="banner-dot" aria-hidden="true"></span>
+      <div>
+        <p class="banner-title">Checking status…</p>
+        <p class="banner-detail" id="summary-text"></p>
+      </div>
+    </section>
+
+    <section id="server-metrics" class="server-metrics" aria-live="polite"></section>
+
+    <main id="groups" class="groups" aria-live="polite"></main>
+
+    <div id="source-meta" class="source-meta" aria-label="Status endpoint sources"></div>
+
+    <footer class="footer">
+      <p>Live checks from Bill and Steve <code>/status</code> endpoints.</p>
+      <p>
+        <a href="https://truespace-tunnel.fly.dev:8080/status">Bill status JSON</a>
+        ·
+        <a href="https://truespace-tunnel.fly.dev:8090/status">Steve status JSON</a>
+        ·
+        <a href="https://github.com/donth8/status">Status repo</a>
+        ·
+        <a href="https://github.com/donth8/true-space-infrastructure">Infrastructure repo</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
