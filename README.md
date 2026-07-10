@@ -1,4 +1,4 @@
-# TrueSpace Status
+# .truespace Status
 
 [![Deploy status page](https://github.com/donth8/status/actions/workflows/pages.yml/badge.svg)](https://github.com/donth8/status/actions/workflows/pages.yml)
 
