@@ -527,9 +527,13 @@ function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
 
-  for (const button of document.querySelectorAll('[data-theme-choice]')) {
-    button.classList.toggle('is-active', button.dataset.themeChoice === theme);
-  }
+  const button = document.getElementById('theme-toggle-btn');
+  if (!button) return;
+
+  const isDark = theme === 'dark';
+  button.textContent = isDark ? 'Light' : 'Dark';
+  button.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+  button.setAttribute('aria-pressed', String(isDark));
 }
 
 function setTheme(theme) {
@@ -542,11 +546,10 @@ function setTheme(theme) {
 function initTheme() {
   applyTheme(getPreferredTheme());
 
-  for (const button of document.querySelectorAll('[data-theme-choice]')) {
-    button.addEventListener('click', () => {
-      setTheme(button.dataset.themeChoice);
-    });
-  }
+  document.getElementById('theme-toggle-btn').addEventListener('click', () => {
+    const current = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+    setTheme(current === 'dark' ? 'light' : 'dark');
+  });
 }
 
 document.getElementById('refresh-btn').addEventListener('click', refresh);

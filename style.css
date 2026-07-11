@@ -116,37 +116,7 @@ code {
   gap: 0.5rem;
 }
 
-.theme-toggle {
-  display: inline-flex;
-  border: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.theme-toggle-btn {
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  padding: 0.5rem 0.75rem;
-  min-height: 2.75rem;
-  font: inherit;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-.theme-toggle-btn + .theme-toggle-btn {
-  border-left: 1px solid var(--border);
-}
-
-.theme-toggle-btn:hover {
-  color: var(--text);
-}
-
-.theme-toggle-btn.is-active {
-  background: var(--bg);
-  color: var(--text);
-  font-weight: 600;
-}
-
+#theme-toggle-btn,
 #refresh-btn {
   border: 1px solid var(--border);
   background: var(--surface);
@@ -159,8 +129,14 @@ code {
   font-size: 0.85rem;
 }
 
+#theme-toggle-btn:hover,
 #refresh-btn:hover:not(:disabled) {
   border-color: var(--muted);
+}
+
+#theme-toggle-btn[aria-pressed="true"] {
+  color: var(--text);
+  font-weight: 600;
 }
 
 #refresh-btn:disabled {
@@ -749,25 +725,13 @@ code {
   }
 
   .meta-actions {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: stretch;
-  }
-
-  .theme-toggle {
-    grid-column: 1 / -1;
     display: flex;
-    width: 100%;
+    gap: 0.5rem;
   }
 
-  .theme-toggle-btn {
-    flex: 1;
-    text-align: center;
-  }
-
+  #theme-toggle-btn,
   #refresh-btn {
-    grid-column: 1 / -1;
-    width: 100%;
+    flex: 1;
   }
 
   .service-row-main {
