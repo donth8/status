@@ -4,30 +4,46 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>.truespace Status</title>
+  <script>
+    (function () {
+      var key = 'truespace-status-theme';
+      var theme = 'dark';
+      try {
+        var stored = localStorage.getItem(key);
+        if (stored === 'light' || stored === 'dark') {
+          theme = stored;
+        } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+          theme = 'light';
+        }
+      } catch (error) {}
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.colorScheme = theme;
+    })();
+  </script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="page">
     <header class="header">
       <div class="brand">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <div>
-          <h1>.truespace Status</h1>
-          <p class="subtitle">Bill &amp; Steve servers and services</p>
-        </div>
+        <h1>.truespace Status</h1>
+        <p class="subtitle">Bill &amp; Steve servers and services</p>
       </div>
       <div class="meta">
         <p id="last-updated">Loading…</p>
-        <button id="refresh-btn" type="button">Refresh</button>
+        <div class="meta-actions">
+          <div class="theme-toggle" role="group" aria-label="Color theme">
+            <button type="button" class="theme-toggle-btn" data-theme-choice="light">Light</button>
+            <button type="button" class="theme-toggle-btn" data-theme-choice="dark">Dark</button>
+          </div>
+          <button id="refresh-btn" type="button">Refresh</button>
+        </div>
       </div>
     </header>
 
     <section id="overall-banner" class="banner banner-loading" aria-live="polite">
-      <span class="banner-dot" aria-hidden="true"></span>
-      <div>
-        <p class="banner-title">Checking status…</p>
-        <p class="banner-detail" id="summary-text"></p>
-      </div>
+      <p class="banner-title">Checking status…</p>
+      <p class="banner-detail" id="summary-text"></p>
     </section>
 
     <section id="server-metrics" class="server-metrics" aria-live="polite"></section>

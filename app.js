@@ -24,7 +24,7 @@ const OVERALL_LABELS = {
 };
 
 const STATUS_LABELS = {
-  up: 'Healthy',
+  up: 'Operational',
   down: 'Down',
   unknown: 'Unknown',
 };
@@ -52,24 +52,6 @@ const METRIC_ROWS = [
 const SERVER_LABELS = {
   bill: 'Bill',
   steve: 'Steve',
-};
-
-const SERVICE_ICONS = {
-  app: '🌐',
-  scraper: '🔍',
-  'ml-tags': '🏷️',
-  'ml-embeddings': '🧠',
-  'ml-video': '🎬',
-  translator: '🌍',
-  cdn: '📦',
-  images: '🖼️',
-  'config-api': '⚙️',
-  'users-api': '👤',
-  'recommendations-api': '✨',
-  'profiles-api': '🪪',
-  'domains-api': '🔗',
-  'bill-endpoint': '🖥️',
-  'steve-endpoint': '🖥️',
 };
 
 function escapeHtml(value) {
@@ -207,7 +189,7 @@ function renderBanner(data) {
   banner.className = `banner banner-${data.overall}`;
   title.textContent = OVERALL_LABELS[data.overall] || 'Status update';
   detail.innerHTML = `
-    <span class="summary-chip up">${data.summary.up} healthy</span>
+    <span class="summary-chip up">${data.summary.up} operational</span>
     <span class="summary-chip down">${data.summary.down} down</span>
     ${data.summary.unknown ? `<span class="summary-chip unknown">${data.summary.unknown} unknown</span>` : ''}
   `;
@@ -386,25 +368,6 @@ function renderServerMetrics(servers) {
   `;
 }
 
-function renderGroupHealthBar(items) {
-  const total = items.length || 1;
-  const up = items.filter((item) => item.status === 'up').length;
-  const down = items.filter((item) => item.status === 'down').length;
-  const unknown = items.filter((item) => item.status === 'unknown').length;
-
-  const upPct = (up / total) * 100;
-  const downPct = (down / total) * 100;
-  const unknownPct = (unknown / total) * 100;
-
-  return `
-    <div class="health-bar" aria-hidden="true">
-      <span class="health-bar-segment up" style="width:${upPct}%"></span>
-      <span class="health-bar-segment down" style="width:${downPct}%"></span>
-      <span class="health-bar-segment unknown" style="width:${unknownPct}%"></span>
-    </div>
-  `;
-}
-
 function renderGroups(items) {
   const container = document.getElementById('groups');
   const grouped = new Map(GROUP_ORDER.map((name) => [name, []]));
@@ -432,11 +395,10 @@ function renderGroups(items) {
           <p class="group-hint">${GROUP_HINTS[groupName] || ''}</p>
         </div>
         <div class="group-summary">
-          <span class="group-count">${up}/${groupItems.length} healthy</span>
-          ${renderGroupHealthBar(groupItems)}
+          <span class="group-count">${up}/${groupItems.length} operational</span>
         </div>
       </div>
-      <div class="service-grid">
+      <div class="service-list">
         ${groupItems.map(renderServiceItem).join('')}
       </div>
     `;
@@ -445,41 +407,31 @@ function renderGroups(items) {
 }
 
 function renderServiceItem(item) {
-  const icon = SERVICE_ICONS[item.id] || '•';
   const statusLabel = STATUS_LABELS[item.status] || item.status;
   const latency = formatLatency(item.latencyMs);
   const latencyTone = latencyClass(item.latencyMs);
   const http = item.httpStatus ? `HTTP ${item.httpStatus}` : null;
   const message = item.message ? escapeHtml(item.message) : '';
+  const showExtra = item.status !== 'up' || message;
+  const details = [
+    `<span class="service-detail latency-${latencyTone}">${latency}</span>`,
+    http ? `<span class="service-detail">${escapeHtml(http)}</span>` : '',
+  ]
+    .filter(Boolean)
+    .join('');
 
   return `
-    <article class="service-card status-${item.status}" aria-label="${escapeHtml(item.name)}: ${statusLabel}">
-      <div class="service-card-top">
-        <div class="service-icon" aria-hidden="true">${icon}</div>
-        <div class="service-pill status-${item.status}">
-          <span class="status-dot" aria-hidden="true"></span>
-          ${statusLabel}
+    <article class="service-row status-${item.status}" aria-label="${escapeHtml(item.name)}: ${statusLabel}">
+      <div class="service-row-main">
+        <h3 class="service-name">${escapeHtml(item.name)}</h3>
+        <span class="service-status status-${item.status}">${statusLabel}</span>
+      </div>
+      ${showExtra ? `
+        <div class="service-row-extra">
+          ${details ? `<div class="service-details">${details}</div>` : ''}
+          ${message ? `<p class="service-message">${message}</p>` : ''}
         </div>
-      </div>
-
-      <h3 class="service-name">${escapeHtml(item.name)}</h3>
-
-      <div class="service-metrics">
-        <span class="metric latency-${latencyTone}" title="Response time">
-          <span class="metric-label">Latency</span>
-          <span class="metric-value">${latency}</span>
-        </span>
-        ${
-          http
-            ? `<span class="metric metric-http" title="HTTP status code">
-                <span class="metric-label">Response</span>
-                <span class="metric-value">${escapeHtml(http)}</span>
-              </span>`
-            : ''
-        }
-      </div>
-
-      ${message ? `<p class="service-message">${message}</p>` : ''}
+      ` : ''}
     </article>
   `;
 }
@@ -510,8 +462,8 @@ function renderLoading() {
             <p class="group-hint">${GROUP_HINTS[group]}</p>
           </div>
         </div>
-        <div class="service-grid">
-          ${'<div class="service-card skeleton"></div>'.repeat(group === 'Public' ? 1 : group === 'Bill' ? 4 : 3)}
+        <div class="service-list">
+          ${'<div class="service-row skeleton"></div>'.repeat(group === 'Public' ? 1 : group === 'Bill' ? 4 : 3)}
         </div>
       </section>
     `,
@@ -558,6 +510,46 @@ async function refresh() {
   }
 }
 
+const THEME_STORAGE_KEY = 'truespace-status-theme';
+
+function getPreferredTheme() {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    if (stored === 'light' || stored === 'dark') {
+      return stored;
+    }
+  } catch (error) {}
+
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.style.colorScheme = theme;
+
+  for (const button of document.querySelectorAll('[data-theme-choice]')) {
+    button.classList.toggle('is-active', button.dataset.themeChoice === theme);
+  }
+}
+
+function setTheme(theme) {
+  applyTheme(theme);
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch (error) {}
+}
+
+function initTheme() {
+  applyTheme(getPreferredTheme());
+
+  for (const button of document.querySelectorAll('[data-theme-choice]')) {
+    button.addEventListener('click', () => {
+      setTheme(button.dataset.themeChoice);
+    });
+  }
+}
+
 document.getElementById('refresh-btn').addEventListener('click', refresh);
+initTheme();
 refresh();
 setInterval(refresh, 5 * 60 * 1000);
