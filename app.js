@@ -493,7 +493,9 @@ function renderError(message) {
 
 async function refresh() {
   const button = document.getElementById('refresh-btn');
+  const icon = document.getElementById('refresh-icon');
   button.disabled = true;
+  icon?.classList.add('fa-spin');
   renderLoading();
 
   try {
@@ -507,15 +509,11 @@ async function refresh() {
     renderError(error.message);
   } finally {
     button.disabled = false;
+    icon?.classList.remove('fa-spin');
   }
 }
 
 const THEME_STORAGE_KEY = 'truespace-status-theme';
-
-const BUTTON_ICONS = {
-  sun: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></svg>`,
-  moon: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 2.2a5.5 5.5 0 1 0 6.6 6.6A4.5 4.5 0 1 1 7.2 2.2z"/></svg>`,
-};
 
 function getPreferredTheme() {
   try {
@@ -534,12 +532,10 @@ function applyTheme(theme) {
 
   const button = document.getElementById('theme-toggle-btn');
   const icon = document.getElementById('theme-toggle-icon');
-  const label = document.getElementById('theme-toggle-label');
   if (!button) return;
 
   const isDark = theme === 'dark';
-  if (icon) icon.innerHTML = BUTTON_ICONS[isDark ? 'sun' : 'moon'];
-  if (label) label.textContent = isDark ? 'Light' : 'Dark';
+  if (icon) icon.className = `fa-solid ${isDark ? 'fa-sun' : 'fa-moon'}`;
   button.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
   button.setAttribute('aria-pressed', String(isDark));
 }
