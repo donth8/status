@@ -6,27 +6,21 @@ const STATUS_ENDPOINTS = {
 const GROUP_ORDER = ['Public', 'Bill', 'Steve'];
 const GROUP_LABELS = {
   Public: 'Public',
-  Bill: 'Bill server',
-  Steve: 'Steve server',
-};
-
-const GROUP_HINTS = {
-  Public: 'Customer-facing',
-  Bill: 'ML & content services',
-  Steve: 'APIs & platform',
+  Bill: 'Bill',
+  Steve: 'Steve',
 };
 
 const OVERALL_LABELS = {
-  operational: 'All systems operational',
-  degraded: 'Some services degraded',
-  major: 'Major outage',
-  unknown: 'Status partially unknown',
+  operational: 'operational',
+  degraded: 'degraded',
+  major: 'major outage',
+  unknown: 'partially unknown',
 };
 
-const STATUS_LABELS = {
-  up: 'Operational',
-  down: 'Down',
-  unknown: 'Unknown',
+const STATUS_BADGE = {
+  up: 'up',
+  down: 'down',
+  unknown: 'secondary',
 };
 
 const METRIC_WINDOWS = ['current', '1m', '5m', '30m', '1h', '1d'];
@@ -60,6 +54,10 @@ function escapeHtml(value) {
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;');
+}
+
+function badge(text, kind = 'secondary') {
+  return `<span class="badge badge-${kind}">${escapeHtml(text)}</span>`;
 }
 
 async function fetchServerStatus(name, url) {
@@ -174,44 +172,49 @@ function formatLatency(ms) {
   return `${(ms / 1000).toFixed(1)} s`;
 }
 
-function latencyClass(ms) {
-  if (!ms) return 'neutral';
-  if (ms < 300) return 'fast';
-  if (ms < 1500) return 'medium';
-  return 'slow';
+function overallBadgeKind(overall) {
+  if (overall === 'operational') return 'up';
+  if (overall === 'degraded') return 'warn';
+  if (overall === 'major') return 'down';
+  return 'secondary';
 }
 
-function renderBanner(data) {
-  const banner = document.getElementById('overall-banner');
-  const title = banner.querySelector('.banner-title');
-  const detail = document.getElementById('summary-text');
-
-  banner.className = `banner banner-${data.overall}`;
-  title.textContent = OVERALL_LABELS[data.overall] || 'Status update';
-  detail.innerHTML = `
-    <span class="summary-chip up">${data.summary.up} operational</span>
-    <span class="summary-chip down">${data.summary.down} down</span>
-    ${data.summary.unknown ? `<span class="summary-chip unknown">${data.summary.unknown} unknown</span>` : ''}
-  `;
+function renderSummary(data) {
+  const container = document.getElementById('summary');
+  const overall = OVERALL_LABELS[data.overall] || data.overall;
+  container.innerHTML = [
+    badge(overall, overallBadgeKind(data.overall)),
+    badge(`${data.summary.up} up`, 'up'),
+    badge(`${data.summary.down} down`, data.summary.down ? 'down' : 'secondary'),
+    data.summary.unknown ? badge(`${data.summary.unknown} unknown`, 'secondary') : '',
+    badge(`${data.summary.total} checks`, 'secondary'),
+  ].join('');
 }
 
 function renderSources(sources) {
   const container = document.getElementById('source-meta');
   container.innerHTML = sources
     .map((source) => {
-      const label = source.server === 'bill' ? 'Bill' : 'Steve';
-      const statusClass = source.ok ? 'source-ok' : 'source-down';
-      const statusLabel = source.ok ? 'reachable' : 'unreachable';
+      const label = SERVER_LABELS[source.server] || source.server;
+      const status = source.ok ? 'reachable' : 'unreachable';
+      const statusKind = source.ok ? 'up' : 'down';
       const detail = source.ok
         ? `${formatLatency(source.latencyMs)} · ${formatTimestamp(source.updatedAt)}`
         : escapeHtml(source.error);
 
       return `
-        <div class="source-chip ${statusClass}">
-          <span class="source-chip-label">${label}</span>
-          <span class="source-chip-status">${statusLabel}</span>
-          <span class="source-chip-detail">${detail}</span>
-        </div>
+        <article class="card">
+          <div class="card-body">
+            <div class="card-header">
+              <h2 class="card-title">${escapeHtml(label)}</h2>
+              <div class="card-badges">
+                ${badge('endpoint', 'primary')}
+                ${badge(status, statusKind)}
+              </div>
+            </div>
+            <p class="card-desc${source.ok ? '' : ' card-desc-error'}">${detail}</p>
+          </div>
+        </article>
       `;
     })
     .join('');
@@ -274,10 +277,12 @@ function renderServerMetricsCard(server) {
   const label = SERVER_LABELS[server.name] || server.name;
   if (!server.ok || !server.metrics) {
     return `
-      <section class="metrics-card metrics-card-error">
+      <section class="metrics-card">
         <div class="metrics-card-header">
-          <h2>${label}</h2>
-          <span class="metrics-host">unreachable</span>
+          <div>
+            <h3>${label}</h3>
+            <p class="metrics-host">unreachable</p>
+          </div>
         </div>
         <p class="metrics-error">${escapeHtml(server.error || 'No metrics available')}</p>
       </section>
@@ -314,10 +319,10 @@ function renderServerMetricsCard(server) {
     <section class="metrics-card">
       <div class="metrics-card-header">
         <div>
-          <h2>${label}</h2>
+          <h3>${label}</h3>
           <p class="metrics-host">${escapeHtml(hostname || '')}</p>
         </div>
-        <span class="metrics-source">${metrics.source === 'netdata' ? 'Netdata history' : 'Live snapshot'}</span>
+        <span class="metrics-source">${metrics.source === 'netdata' ? 'netdata history' : 'live snapshot'}</span>
       </div>
 
       <div class="metrics-meta">
@@ -358,128 +363,87 @@ function renderServerMetrics(servers) {
   }
 
   container.innerHTML = `
-    <div class="section-heading">
-      <h2>Server metrics</h2>
-      <p>Averages from Netdata: now, 1m, 5m, 30m, 1h, 1d</p>
-    </div>
+    <h2 class="section-title">Server metrics</h2>
+    <p class="section-lead">Averages from Netdata: now, 1m, 5m, 30m, 1h, 1d.</p>
     <div class="metrics-grid">
       ${servers.map(renderServerMetricsCard).join('')}
     </div>
   `;
 }
 
-function renderGroups(items) {
-  const container = document.getElementById('groups');
-  const grouped = new Map(GROUP_ORDER.map((name) => [name, []]));
-
-  for (const item of items) {
-    if (!grouped.has(item.group)) {
-      grouped.set(item.group, []);
-    }
-    grouped.get(item.group).push(item);
-  }
-
-  container.innerHTML = '';
-
-  for (const groupName of GROUP_ORDER) {
-    const groupItems = grouped.get(groupName) || [];
-    if (groupItems.length === 0) continue;
-
-    const up = groupItems.filter((item) => item.status === 'up').length;
-    const card = document.createElement('section');
-    card.className = 'group-card';
-    card.innerHTML = `
-      <div class="group-header">
-        <div class="group-heading">
-          <h2>${GROUP_LABELS[groupName] || groupName}</h2>
-          <p class="group-hint">${GROUP_HINTS[groupName] || ''}</p>
-        </div>
-        <div class="group-summary">
-          <span class="group-count">${up}/${groupItems.length} operational</span>
-        </div>
-      </div>
-      <div class="service-list">
-        ${groupItems.map(renderServiceItem).join('')}
-      </div>
-    `;
-    container.appendChild(card);
-  }
+function sortItems(items) {
+  const order = new Map(GROUP_ORDER.map((group, index) => [group, index]));
+  return [...items].sort((a, b) => {
+    const groupDiff = (order.get(a.group) ?? 99) - (order.get(b.group) ?? 99);
+    if (groupDiff !== 0) return groupDiff;
+    return a.name.localeCompare(b.name);
+  });
 }
 
-function renderServiceItem(item) {
-  const statusLabel = STATUS_LABELS[item.status] || item.status;
-  const latency = formatLatency(item.latencyMs);
-  const latencyTone = latencyClass(item.latencyMs);
-  const http = item.httpStatus ? `HTTP ${item.httpStatus}` : null;
-  const message = item.message ? escapeHtml(item.message) : '';
-  const showExtra = item.status !== 'up' || message;
-  const details = [
-    `<span class="service-detail latency-${latencyTone}">${latency}</span>`,
-    http ? `<span class="service-detail">${escapeHtml(http)}</span>` : '',
-  ]
-    .filter(Boolean)
-    .join('');
+function renderServiceCard(item) {
+  const status = item.status || 'unknown';
+  const statusKind = STATUS_BADGE[status] || 'secondary';
+  const badges = [
+    badge(item.group || 'Service', 'primary'),
+    badge(status, statusKind),
+  ];
+
+  if (item.latencyMs || item.latencyMs === 0) {
+    badges.push(badge(formatLatency(item.latencyMs), 'secondary'));
+  }
+  if (item.httpStatus) {
+    badges.push(badge(`HTTP ${item.httpStatus}`, 'secondary'));
+  }
+
+  const description = item.message
+    ? escapeHtml(item.message)
+    : `${escapeHtml(item.id)} health check`;
 
   return `
-    <article class="service-row status-${item.status}" aria-label="${escapeHtml(item.name)}: ${statusLabel}">
-      <div class="service-row-main">
-        <h3 class="service-name">${escapeHtml(item.name)}</h3>
-        <span class="service-status status-${item.status}">${statusLabel}</span>
-      </div>
-      ${showExtra ? `
-        <div class="service-row-extra">
-          ${details ? `<div class="service-details">${details}</div>` : ''}
-          ${message ? `<p class="service-message">${message}</p>` : ''}
+    <article class="card">
+      <div class="card-body">
+        <div class="card-header">
+          <h2 class="card-title">${escapeHtml(item.name)}</h2>
+          <div class="card-badges">${badges.join('')}</div>
         </div>
-      ` : ''}
+        <p class="card-desc${item.message ? ' card-desc-error' : ''}">${description}</p>
+      </div>
     </article>
   `;
 }
 
+function renderGroups(items) {
+  const container = document.getElementById('groups');
+  const sorted = sortItems(items);
+  container.innerHTML = sorted.map(renderServiceCard).join('');
+}
+
 function renderLoading() {
-  const banner = document.getElementById('overall-banner');
-  banner.className = 'banner banner-loading';
-  banner.querySelector('.banner-title').textContent = 'Checking status…';
-  document.getElementById('summary-text').textContent = '';
+  document.getElementById('summary').innerHTML = badge('checking…', 'secondary');
+  document.getElementById('source-meta').innerHTML = `
+    <article class="card skeleton-card skeleton-chip"></article>
+    <article class="card skeleton-card skeleton-chip"></article>
+  `;
 
   document.getElementById('server-metrics').innerHTML = `
-    <div class="section-heading">
-      <h2>Server metrics</h2>
-      <p>Loading Bill and Steve metrics…</p>
-    </div>
+    <h2 class="section-title">Server metrics</h2>
+    <p class="section-lead">Loading Bill and Steve metrics…</p>
     <div class="metrics-grid">
       <section class="metrics-card skeleton-metrics"></section>
       <section class="metrics-card skeleton-metrics"></section>
     </div>
   `;
 
-  document.getElementById('groups').innerHTML = GROUP_ORDER.map(
-    (group) => `
-      <section class="group-card group-card-loading">
-        <div class="group-header">
-          <div class="group-heading">
-            <h2>${GROUP_LABELS[group]}</h2>
-            <p class="group-hint">${GROUP_HINTS[group]}</p>
-          </div>
-        </div>
-        <div class="service-list">
-          ${'<div class="service-row skeleton"></div>'.repeat(group === 'Public' ? 1 : group === 'Bill' ? 4 : 3)}
-        </div>
-      </section>
-    `,
-  ).join('');
-
-  document.getElementById('source-meta').innerHTML = `
-    <div class="source-chip skeleton-chip"></div>
-    <div class="source-chip skeleton-chip"></div>
-  `;
+  document.getElementById('groups').innerHTML = Array.from({ length: 6 })
+    .map(() => '<article class="card skeleton-card"></article>')
+    .join('');
 }
 
 function renderError(message) {
-  const banner = document.getElementById('overall-banner');
-  banner.className = 'banner banner-major';
-  banner.querySelector('.banner-title').textContent = 'Unable to load status';
-  document.getElementById('summary-text').textContent = message;
+  document.getElementById('summary').innerHTML = [
+    badge('unable to load', 'down'),
+    badge(message, 'secondary'),
+  ].join('');
 
   document.getElementById('groups').innerHTML = `
     <div class="error-box">
@@ -487,29 +451,26 @@ function renderError(message) {
       <code>/status</code> is deployed on Bill and Steve.
     </div>
   `;
-  document.getElementById('source-meta').textContent = '';
+  document.getElementById('source-meta').innerHTML = '';
   document.getElementById('server-metrics').innerHTML = '';
 }
 
 async function refresh() {
   const button = document.getElementById('refresh-btn');
-  const icon = document.getElementById('refresh-icon');
   button.disabled = true;
-  icon?.classList.add('fa-spin');
   renderLoading();
 
   try {
     const data = await loadStatus();
-    document.getElementById('last-updated').textContent = `Checked: ${formatTimestamp(new Date().toISOString())}`;
+    document.getElementById('last-updated').textContent = `Checked ${formatTimestamp(new Date().toISOString())}`;
+    renderSummary(data);
     renderSources(data.sources);
-    renderBanner(data);
     renderServerMetrics(data.servers);
     renderGroups(data.items);
   } catch (error) {
     renderError(error.message);
   } finally {
     button.disabled = false;
-    icon?.classList.remove('fa-spin');
   }
 }
 
@@ -531,11 +492,10 @@ function applyTheme(theme) {
   document.documentElement.style.colorScheme = theme;
 
   const button = document.getElementById('theme-toggle-btn');
-  const icon = document.getElementById('theme-toggle-icon');
   if (!button) return;
 
   const isDark = theme === 'dark';
-  if (icon) icon.className = `fa-solid ${isDark ? 'fa-sun' : 'fa-moon'}`;
+  button.textContent = isDark ? '☀' : '☾';
   button.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
   button.setAttribute('aria-pressed', String(isDark));
 }

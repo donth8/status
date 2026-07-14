@@ -20,50 +20,55 @@
       document.documentElement.style.colorScheme = theme;
     })();
   </script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="theme.css">
 </head>
 <body>
-  <div class="page">
-    <header class="header">
-      <div class="brand">
-        <h1>.truespace Status</h1>
-        <p class="subtitle">Bill &amp; Steve servers and services</p>
-      </div>
-      <div class="meta">
-        <p id="last-updated">Loading…</p>
-        <div class="meta-actions">
-          <button id="theme-toggle-btn" type="button" aria-label="Switch to light mode" aria-pressed="true">
-            <i id="theme-toggle-icon" class="fa-solid fa-sun" aria-hidden="true"></i>
-          </button>
-          <button id="refresh-btn" type="button" aria-label="Refresh status">
-            <i id="refresh-icon" class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
-          </button>
-        </div>
-      </div>
-    </header>
+  <header class="site-header">
+    <a class="brand" href="https://truespace.app">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="4 17 10 11 4 5"></polyline>
+        <line x1="12" x2="20" y1="19" y2="19"></line>
+      </svg>
+      <span>.truespace</span>
+    </a>
+    <nav class="nav-links" aria-label="Main">
+      <a class="active" href="./">status</a>
+    </nav>
+    <div class="header-actions">
+      <button id="theme-toggle-btn" type="button" aria-label="Switch to light mode" aria-pressed="true">☀</button>
+      <button id="refresh-btn" type="button" aria-label="Refresh status">↻</button>
+    </div>
+  </header>
 
-    <section id="overall-banner" class="banner banner-loading" aria-live="polite">
-      <p class="banner-title">Checking status…</p>
-      <p class="banner-detail" id="summary-text"></p>
+  <main class="page">
+    <h1 class="page-title">Status</h1>
+    <p class="page-lead">Bill and Steve servers and services. Live checks from each server <code>/status</code> endpoint.</p>
+    <p id="last-updated" class="page-meta">Loading…</p>
+
+    <div id="summary" class="summary" aria-live="polite">
+      <span class="badge badge-secondary">checking…</span>
+    </div>
+
+    <div id="source-meta" class="card-grid" aria-label="Status endpoint sources"></div>
+
+    <section id="server-metrics" class="metrics-section" aria-live="polite"></section>
+
+    <section aria-labelledby="services-heading">
+      <h2 id="services-heading" class="section-title">Services</h2>
+      <p class="section-lead">Health checks grouped by platform area.</p>
+      <div id="groups" class="card-grid" aria-live="polite"></div>
     </section>
 
-    <section id="server-metrics" class="server-metrics" aria-live="polite"></section>
-
-    <main id="groups" class="groups" aria-live="polite"></main>
-
-    <div id="source-meta" class="source-meta" aria-label="Status endpoint sources"></div>
-
-    <footer class="footer">
-      <p>Live checks from Bill and Steve <code>/status</code> endpoints.</p>
-      <nav class="footer-links" aria-label="Related links">
-        <a href="https://truespace-tunnel.fly.dev:8080/status">Bill status JSON</a>
-        <a href="https://truespace-tunnel.fly.dev:8090/status">Steve status JSON</a>
+    <footer class="meta">
+      <p>Auto-refreshes every 5 minutes.</p>
+      <nav class="meta-links" aria-label="Related links">
+        <a href="https://truespace-tunnel.fly.dev:8080/status?format=json">Bill JSON</a>
+        <a href="https://truespace-tunnel.fly.dev:8090/status?format=json">Steve JSON</a>
         <a href="https://github.com/donth8/status">Status repo</a>
         <a href="https://github.com/donth8/true-space-infrastructure">Infrastructure repo</a>
       </nav>
     </footer>
-  </div>
+  </main>
 
   <script src="app.js"></script>
 </body>
